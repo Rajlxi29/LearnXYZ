@@ -96,6 +96,28 @@ function formatNotebookRoadmap(notebookData, requestedTopic) {
 
     totalItemsCount += 1;
 
+    const stQuiz = (quizRaw.subtopic_quizzes || []).find(sq => sq.subtopic_name === sub.subtopic_name);
+    let nodeQuiz = null;
+    if (stQuiz && stQuiz.questions) {
+      nodeQuiz = {
+        id: `${nodeId}-quiz`,
+        title: `${sub.subtopic_name} Quiz`,
+        topicId: nodeId,
+        timePerQuestion: 30,
+        questions: stQuiz.questions.map((q, idx) => {
+          const correctIndex = q.options ? q.options.indexOf(q.correct_answer) : 0;
+          return {
+            id: `q-${idx + 1}`,
+            question: q.question,
+            options: q.options || [],
+            correctIndex: correctIndex >= 0 ? correctIndex : 0,
+            correctAnswer: q.correct_answer,
+            explanation: q.explanation || "",
+          };
+        })
+      };
+    }
+
     return {
       id: nodeId,
       title: sub.subtopic_name,
@@ -104,6 +126,7 @@ function formatNotebookRoadmap(notebookData, requestedTopic) {
       status: "not-started",
       order: sIdx + 1,
       subtopics,
+      quiz: nodeQuiz,
     };
   });
 
@@ -420,11 +443,24 @@ export const getRoadmapQuiz = async (req, res) => {
       ],
     }).lean();
 
-    if (!roadmap || !roadmap.quiz) {
+    if (!roadmap) {
       return res.status(404).json({ message: "Quiz not found for this roadmap." });
     }
 
-    res.status(200).json(roadmap.quiz);
+    let targetQuiz = roadmap.quiz;
+    if (roadmap.slug !== id && (!roadmap._id || roadmap._id.toString() !== id)) {
+      // Find the specific node or subtopic that matches id
+      const node = roadmap.nodes.find(n => n.id === id || (n.subtopics && n.subtopics.some(s => s.id === id)));
+      if (node && node.quiz) {
+        targetQuiz = node.quiz;
+      }
+    }
+
+    if (!targetQuiz) {
+      return res.status(404).json({ message: "Quiz not found." });
+    }
+
+    res.status(200).json(targetQuiz);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -445,11 +481,23 @@ export const submitQuiz = async (req, res) => {
       ],
     });
 
-    if (!roadmap || !roadmap.quiz || !roadmap.quiz.questions) {
+    if (!roadmap) {
+      return res.status(404).json({ message: "Quiz not found." });
+    }
+    
+    let targetQuiz = roadmap.quiz;
+    if (roadmap.slug !== id && (!roadmap._id || roadmap._id.toString() !== id)) {
+      const node = roadmap.nodes.find(n => n.id === id || (n.subtopics && n.subtopics.some(s => s.id === id)));
+      if (node && node.quiz) {
+        targetQuiz = node.quiz;
+      }
+    }
+
+    if (!targetQuiz || !targetQuiz.questions) {
       return res.status(404).json({ message: "Quiz not found." });
     }
 
-    const questions = roadmap.quiz.questions;
+    const questions = targetQuiz.questions;
     let correctCount = 0;
 
     questions.forEach((q, idx) => {

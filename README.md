@@ -77,7 +77,7 @@ The roadmap acts as the central object progressively enriched by the other nodes
 * Highlighting key definitions and critical facts
 
 ### Quiz Node
-* Generating a multiple-choice quiz based on the user's topic
+* Generating a multiple-choice quiz based on the overall topic, as well as unique, specific quizzes for EACH subtopic.
 * Scaling difficulty automatically based on the user's past quiz scores (Progressive Quizzes)
 * Providing options, answers, and explanations
 

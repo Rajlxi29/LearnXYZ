@@ -71,8 +71,13 @@ class Question(BaseModel):
     correct_answer: str
     explanation: str
 
+class SubtopicQuiz(BaseModel):
+    subtopic_name: str
+    questions: List[Question]
+
 class Quiz(BaseModel):
     questions: List[Question]
+    subtopic_quizzes: List[SubtopicQuiz] = []
 
 quiz_struct_model = model.with_structured_output(Quiz)
 
@@ -128,7 +133,8 @@ Generate the learning roadmap for that topic."""
 
 quiz_prompt = """You are an expert quiz generator.
 Generate a multiple-choice quiz for the topic provided by the user.
-By default, generate exactly 5 questions. If the user explicitly specifies a different number of questions in their topic prompt, generate exactly that many questions.
+Generate 5 general questions for the main topic.
+Additionally, generate 3 specific questions for EACH of the subtopics listed in the roadmap.
 
 For each question:
 - Provide the question text.
@@ -217,6 +223,11 @@ def quiznode(state: SubjectState):
         dynamic_prompt += f"\n\nContext: The user scored {prev_score_str} on their previous quiz related to this topic. "
         dynamic_prompt += "If the score is low (e.g., under 50%), generate an easier, foundational-level quiz. "
         dynamic_prompt += "If the score is high (e.g., over 80%), generate a highly advanced, challenging quiz to push their limits."
+
+    roadmap = state.get("roadmap", {})
+    subtopics = [sub.get("subtopic_name", "") for sub in roadmap.get("subtopics", [])]
+    if subtopics:
+        dynamic_prompt += "\n\nThe roadmap includes the following subtopics:\n" + "\n".join([f"- {s}" for s in subtopics])
 
     sysquery = SystemMessage(content=dynamic_prompt)
     humquery = HumanMessage(content=state["topic"])

@@ -164,7 +164,7 @@ export default function TopicDetail() {
   };
 
 
-  const quizTargetId = topic.roadmapSlug || topic.roadmapId || (quizzes[topic.id] ? topic.id : (quizzes[id] ? id : id));
+  const quizTargetId = topic.id || id;
 
   return (
     <div className="page-layout">

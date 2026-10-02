@@ -337,7 +337,7 @@ export default function RoadmapView() {
                   </Link>
 
                   <Link
-                    to={`/quiz/${roadmap.slug || roadmap._id || selectedNode.id}`}
+                    to={`/quiz/${selectedNode.id}`}
                     className="btn btn-ghost w-full"
                     style={{ justifyContent: 'center' }}
                   >
